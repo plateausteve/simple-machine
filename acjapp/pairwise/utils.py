@@ -18,7 +18,7 @@
 # Aleksandra B. Slavković | Professor of Statistics
 # Department of Statistics, Penn State University, University Park, PA 16802
 
-from .models import Item, Comparison, Set
+from .models import Item, Comparison, Group
 import numpy as np
 from numpy import log, sqrt
 import random
@@ -48,32 +48,32 @@ class ComputedItem:
             self.randomsorter = randomsorter
             self.percentile = percentile
 
-def get_allowed_sets(userid):
-    sets = Set.objects.filter(judges__id__exact=userid).order_by('pk')
-    allowed_sets_ids = []
-    for set in sets:
-        allowed_sets_ids.append(set.id)
-    return allowed_sets_ids
+def get_allowed_groups(userid):
+    groups = Group.objects.filter(judges__id__exact=userid).order_by('pk')
+    allowed_groups_ids = []
+    for group in groups:
+        allowed_groups_ids.append(group.id)
+    return allowed_groups_ids
 
-def item_selection(set, userid):
-    itemcount = Item.objects.filter(set=set).count()
-    set_object = Set.objects.get(pk=set) # sometimes we need to use object not just the string of the set ID number
-    compslist = build_compslist(set, userid)
+def item_selection(group, userid):
+    itemcount = Item.objects.filter(group=group).count()
+    group_object = Group.objects.get(pk=group) # sometimes we need to use object not just the string of the group ID number
+    compslist = build_compslist(group, userid)
     judges = [userid] #judges must be a list, even if it only has one judge in it
-    computed_items_for_user_in_set = get_computed_items(set, judges)
+    computed_items_for_user_in_group = get_computed_items(group, judges)
     maxcomps=(itemcount * (itemcount-1)/2)
     switch=min(itemcount + (itemcount * (itemcount-1)/6), maxcomps)
     if len(compslist) < switch: #prioritize minimum comps until comps = min of n+max/3 or max, then . . .
-        computed_items_for_user_in_set.sort(key = lambda x: (x.comps, x.samep, x.fisher_info, x.randomsorter))
+        computed_items_for_user_in_group.sort(key = lambda x: (x.comps, x.samep, x.fisher_info, x.randomsorter))
     else: #prioritize lowest same probability (less distinct estimate < -1, samep = -1 indicates unique estimate)
-        computed_items_for_user_in_set.sort(key = lambda x: (x.samep, x.comps, x.fisher_info, x.randomsorter))
-        if computed_items_for_user_in_set[0].samep == -1 and set_object.override_end == None:
+        computed_items_for_user_in_group.sort(key = lambda x: (x.samep, x.comps, x.fisher_info, x.randomsorter))
+        if computed_items_for_user_in_group[0].samep == -1 and group_object.override_end == None:
             return compslist, None, None, [] # everything is empty
 
     # Go through all comparable items, and choose the first as itemi.
     # Then calculate the difference in probability 'p_diff' between itemi and every other item
     j_list = []
-    for i, item in enumerate(computed_items_for_user_in_set):
+    for i, item in enumerate(computed_items_for_user_in_group):
         if i == 0:
             if item.comps == itemcount-1:
                 return compslist, None, None, [] # everything is empty
@@ -93,14 +93,14 @@ def item_selection(set, userid):
         itemj = None
     return compslist, itemi, itemj, j_list
 
-def get_computed_items(set, judges):
-    eps_of_set = []
-    computed_items_for_user_in_set =[]
-    items = Item.objects.filter(set=set)
+def get_computed_items(group, judges):
+    eps_of_group = []
+    computed_items_for_user_in_group =[]
+    items = Item.objects.filter(group=group)
     for item in items:
         comps, wins = compute_comps_wins(item, judges)
         logit, probability, stdev, fisher_info, se, ep, hi95ci, lo95ci, randomsorter = compute_more(comps, wins)
-        computed_items_for_user_in_set.append(
+        computed_items_for_user_in_group.append(
             ComputedItem(
                 item.id,
                 item.idcode,
@@ -121,11 +121,11 @@ def get_computed_items(set, judges):
                 0, # percentile is set separately
                 )
         )
-    computed_items_for_user_in_set = set_ranks(computed_items_for_user_in_set)
-    return computed_items_for_user_in_set
+    computed_items_for_user_in_group = set_ranks(computed_items_for_user_in_group)
+    return computed_items_for_user_in_group
 
-def build_compslist(set, userid):
-    comps = Comparison.objects.filter(set=set).filter(judge=userid)
+def build_compslist(group, userid):
+    comps = Comparison.objects.filter(group=group).filter(judge=userid)
     compslist = []
     for comp in comps:
         i = comp.itemi.id
@@ -187,31 +187,31 @@ def compute_more(comps, wins):
     return logit, probability, stdev, fisher_info, se, ep, hi95ci, lo95ci, randomsorter
     # more here: http://personal.psu.edu/abs12//stat504/online/01b_loglike/01b_loglike_print.htm
 
-def set_ranks(computed_items_for_user_in_set):
+def set_ranks(computed_items_for_user_in_group):
     #now decrease (for sorting later) samep by one for every item including self with matching probability and set a rank value fo each
     item_ranks = []
-    computed_items_for_user_in_set.sort(key = lambda x: x.probability, reverse=True)
+    computed_items_for_user_in_group.sort(key = lambda x: x.probability, reverse=True)
     rank = 0
-    for item in computed_items_for_user_in_set:
-        for match in computed_items_for_user_in_set:
+    for item in computed_items_for_user_in_group:
+        for match in computed_items_for_user_in_group:
             if match.probability == item.probability:
                 match.samep -= 1
         if item.samep == -1: #if there's only one at that value, then increase rank increment 1 for next
             rank += 1
         item.rank = rank
-        item_ranks.append(len(computed_items_for_user_in_set)-rank)
-    # calculate percentile in this set using the list of ranks in set
-    for item in computed_items_for_user_in_set:
+        item_ranks.append(len(computed_items_for_user_in_group)-rank)
+    # calculate percentile in this group using the list of ranks in group
+    for item in computed_items_for_user_in_group:
         r = len(item_ranks)-item.rank
         perc = percentileofscore(item_ranks, float(r), kind='strict')
         item.percentile = '{:.2f}'.format(perc)
-    return computed_items_for_user_in_set
+    return computed_items_for_user_in_group
 
-def make_groups(setid, judgelist):
-    setobject = Set.objects.get(pk=setid)
-    if judgelist == []: #judgelist is only used from command line to get combined stats for a set of preselected judges
-        try: # if comps exist for this set, query a list of unique judge ids who have made comparisons on this set
-            judgelist = Comparison.objects.filter(set=setobject).values_list('judge_id', flat=True).distinct()
+def make_groups(groupid, judgelist):
+    groupobject = Group.objects.get(pk=groupid)
+    if judgelist == []: #judgelist is only used from command line to get combined stats for a group of preselected judges
+        try: # if comps exist for this group, query a list of unique judge ids who have made comparisons on this group
+            judgelist = Comparison.objects.filter(group=groupobject).values_list('judge_id', flat=True).distinct()
         except:
             judgelist = None
     if len(judgelist) == 1:
@@ -221,7 +221,7 @@ def make_groups(setid, judgelist):
         return bestgroup, bestagreement, corrstats_df
     set_judge_item_rank = {}
     for judge in judgelist:
-        computed_items = get_computed_items(setobject, [judge])
+        computed_items = get_computed_items(groupobject, [judge])
         computed_items.sort(key = lambda x: x.id)
         set_judge_item_rank[judge]=[]
         for item in computed_items:
@@ -281,40 +281,40 @@ def make_groups(setid, judgelist):
     return bestgroup, bestagreement, corrstats_df, corr_chart_data
 
 # used from the django manage.py python shell
-def bulkcreateitems(filepath, user_id, set_id):
+def bulkcreateitems(filepath, user_id, group_id):
     # in python shell define the variable as this example
     # bulkcreateitems("data/set4.csv",24,4)
     file = open(filepath, "r", encoding='utf-8-sig')
     csv_reader = csv.reader(file)
     for row in csv_reader:
         id=int(row[0])
-        item = Item(set_id=set_id, idcode=id, user_id=user_id)
+        item = Item(group_id=group_id, idcode=id, user_id=user_id)
         item.save()
-        print("Created item instance for for idcode ", id, "in set ", set_id, " for user ", user_id)
+        print("Created item instance for for idcode ", id, "in group ", group_id, " for user ", user_id)
     return
 
 # used from the django manage.py python shell
 # usage example: a, b = judgereport(30)
 def judgereport(judgeid):
-    sets = get_allowed_sets(judgeid)
+    groups = get_allowed_groups(judgeid)
     report = []
-    for set in sets:
-        n = Comparison.objects.filter(judge__pk = judgeid, set = set).count()
-        itemcount = Item.objects.filter(set=set).count()
-        setobject = Set.objects.get(pk=set)
-        if setobject.override_end == None:
+    for group in groups:
+        n = Comparison.objects.filter(judge__pk = judgeid, group = group).count()
+        itemcount = Item.objects.filter(group=group).count()
+        groupobject = Group.objects.get(pk=group)
+        if groupobject.override_end == None:
             maxcomps = int(itemcount * (itemcount-1) * .333)
         else:
-            maxcomps = setobject.override_end
-        report.append([set, n, maxcomps])
-    df = pandas.DataFrame(report, columns = ["Set","Done So Far","End"])
+            maxcomps = groupobject.override_end
+        report.append([group, n, maxcomps])
+    df = pandas.DataFrame(report, columns = ["Group","Done So Far","End"])
     htmltable = df.to_html(index=False)
     return df, htmltable
 
 # used from the django manage.py python shell
 # usage example: a,b,c,d,e = groupstats(4, [1,27,26],[36,35,38])
-def groupstats(set, judgelist1, judgelist2):
-    computed_items = get_computed_items(set, judgelist1)
+def groupstats(group, judgelist1, judgelist2):
+    computed_items = get_computed_items(group, judgelist1)
     rankorder1_df = pandas.DataFrame([item.__dict__ for item in computed_items ]) # convert list of objects into a dataframe
     rankorder1_df.drop(['idcode_f', 'fisher_info', 'samep', 'randomsorter', 'percentile','comps','wins','stdev','probability','se','ep','lo95ci','hi95ci'], axis = 1, inplace=True) # drop unneeded columns
     idorder1_df = rankorder1_df.sort_values("id")
@@ -323,7 +323,7 @@ def groupstats(set, judgelist1, judgelist2):
         idorder2_df = "None"
         rankcorr_df = "None"
     else:
-        computed_items = get_computed_items(set, judgelist2)
+        computed_items = get_computed_items(group, judgelist2)
         rankorder2_df = pandas.DataFrame([item.__dict__ for item in computed_items ])
         rankorder2_df.drop(['idcode_f', 'fisher_info', 'samep', 'randomsorter', 'percentile','comps','wins','stdev','probability','se','ep','lo95ci','hi95ci'], axis = 1, inplace=True) # drop unneeded columns
         idorder2_df = rankorder2_df.sort_values("id")

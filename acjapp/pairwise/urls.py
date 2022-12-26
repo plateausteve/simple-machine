@@ -20,12 +20,12 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index.html'),
     path('index/', views.index, name='index.html'),
-    path('compare/<set>/', views.compare, name='compare.html'),
+    path('compare/<group>/', views.compare, name='compare.html'),
     path('compare/', views.compare, name='compare.html'),
-    path('comparisons/<set>/', views.comparisons, name='comparison_list.html'),
-    path('stats/<set>/', views.stats, name='stats'),
+    path('comparisons/<group>/', views.comparisons, name='comparison_list.html'),
+    path('stats/<group>/', views.stats, name='stats'),
     path('item/<int:pk>/', views.item_detail, name='item_detail.html'),
-    path('set/<int:pk>/', views.set_view, name='set_view'),
+    path('group/<int:pk>/', views.group_view, name='group_view'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout')
 ]

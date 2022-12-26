@@ -1,6 +1,6 @@
 <div class="page-header">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <a class="navbar-brand" style="margin-left: 1rem" href="/index">Comparative Judgment Web App</a>
+        <a class="navbar-brand" style="margin-left: 1rem" href="/index">Simplicest Adaptive Comparative Judgment</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -24,9 +24,9 @@
                         Compare
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            {% if request.session.sets %}
-                                {% for set in request.session.sets %}
-                                <a class="dropdown-item" href="{% url 'compare.html' set %}">Set {{ set }}</a>
+                            {% if request.session.groups %}
+                                {% for group in request.session.groups %}
+                                <a class="dropdown-item" href="{% url 'compare.html' group %}">Group {{ group }}</a>
                                 {% endfor %}
                             {% endif %}
                         </div>
@@ -36,9 +36,9 @@
                         Comparisons
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            {% if request.session.sets %}
-                                {% for set in request.session.sets %}
-                                <a class="dropdown-item" href="{% url 'comparison_list.html' set %}">Set {{ set }}</a>
+                            {% if request.session.groups %}
+                                {% for group in request.session.groups %}
+                                <a class="dropdown-item" href="{% url 'comparison_list.html' group %}">Group {{ group }}</a>
                                 {% endfor %}
                             {% endif %}
                         </div>
@@ -48,9 +48,9 @@
                         My Results
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            {% if request.session.sets %}
-                                {% for set in request.session.sets %}
-                                <a class="dropdown-item" href="{% url 'set_view' set %}">Set {{ set }}</a>
+                            {% if request.session.groups %}
+                                {% for group in request.session.groups %}
+                                <a class="dropdown-item" href="{% url 'group_view' group %}">Group {{ group }}</a>
                                 {% endfor %}
                             {% endif %}
                         </div>
@@ -60,9 +60,9 @@
                         Stats
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            {% if request.session.sets %}
-                                {% for set in request.session.sets %}
-                                <a class="dropdown-item" href="{% url 'stats' set %}">Set {{ set }}</a>
+                            {% if request.session.groups %}
+                                {% for group in request.session.groups %}
+                                <a class="dropdown-item" href="{% url 'stats' group %}">Group {{ group }}</a>
                                 {% endfor %}
                             {% endif %}
                         </div>

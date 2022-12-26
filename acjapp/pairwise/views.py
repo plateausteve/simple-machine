@@ -17,7 +17,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from datetime import datetime
 from django.http import HttpResponse
-from .models import Item, Comparison, Set, WinForm
+from .models import Item, Comparison, Group, WinForm
 from .utils import * 
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -26,8 +26,8 @@ from django.contrib.auth.forms import AuthenticationForm
 def index(request):
     if request.user.is_authenticated:
         userid=request.user.id
-        allowed_sets_ids = get_allowed_sets(userid)
-        request.session['sets'] = allowed_sets_ids
+        allowed_groups_ids = get_allowed_groups(userid)
+        request.session['groups'] = allowed_groups_ids
     return render(request, 'pairwise/index.html', {})
 
 def login_view(request):
@@ -55,9 +55,9 @@ def item_detail(request, pk):
     return render(request, 'pairwise/item_detail.html', {'item': item})
 
 @login_required(login_url="login")
-def stats(request, set):
+def stats(request, group):
     judgelist = [] # the make_groups function can also take preselected judges when needed -- right now command line only
-    j, a, corrstats_df, corr_chart_data = make_groups(set, judgelist)
+    j, a, corrstats_df, corr_chart_data = make_groups(group, judgelist)
     if len(j) < 2:
         judges = [request.user.id]
         a2 = 1
@@ -66,7 +66,7 @@ def stats(request, set):
         judges = j
         a2 = a
         corrstats = corrstats_df.to_html()
-    computed_items = get_computed_items(set, judges)
+    computed_items = get_computed_items(group, judges)
 
     #build lists to send to Highchart charts for error bar chart -- resort for low to high scores
     lohi_computed_items = sorted(computed_items, key = lambda x: x.probability)
@@ -85,7 +85,7 @@ def stats(request, set):
 
     return render(request, 'pairwise/stats.html', {
         'item_table': computed_items, 
-        'set': set,
+        'group': group,
         'judges': judges,
         'a': a2,
         'corrstats': corrstats,
@@ -98,42 +98,42 @@ def stats(request, set):
     )
 
 @login_required(login_url="login")
-def set_view(request, pk):
+def group_view(request, pk):
     judges = []
     judges.append(request.user.id)
-    allowed_sets_ids = get_allowed_sets(request.user.id)
-    request.session['sets'] = allowed_sets_ids
+    allowed_groups_ids = get_allowed_groups(request.user.id)
+    request.session['groups'] = allowed_groups_ids
     computed_items = get_computed_items(pk, judges)
     computed_items.sort(key = lambda x: x.probability, reverse=True)
-    return render(request, 'pairwise/set.html', {
+    return render(request, 'pairwise/group.html', {
         'pk': pk, 
-        'set_items': computed_items
+        'group_items': computed_items
         }
     )
 
 @login_required(login_url="login")
-def comparisons(request, set):
+def comparisons(request, group):
     userid=request.user.id
-    allowed_sets_ids = get_allowed_sets(userid)
-    request.session['sets']= allowed_sets_ids
-    if int(set) not in allowed_sets_ids:    
-        html="<p>ERROR: Set not available.</p>"
+    allowed_groups_ids = get_allowed_groups(userid)
+    request.session['groups']= allowed_groups_ids
+    if int(group) not in allowed_groups_ids:    
+        html="<p>ERROR: Group not available.</p>"
         return HttpResponse(html)
-    comparisons = Comparison.objects.filter(set=set, judge=userid)
+    comparisons = Comparison.objects.filter(group=group, judge=userid)
     return render(request, 'pairwise/comparison_list.html', {
-        'set': set,
+        'group': group,
         'comparisons': comparisons,
         }
     )
        
 @login_required(login_url="login")
-def compare(request, set):
+def compare(request, group):
     userid=request.user.id
-    allowed_sets_ids = get_allowed_sets(userid)
-    request.session['sets']= allowed_sets_ids
+    allowed_groups_ids = get_allowed_groups(userid)
+    request.session['groups']= allowed_groups_ids
     message = "" # empty message will be ignored in template
-    if int(set) not in allowed_sets_ids:    
-        html = "<p>ERROR: Set not available.</p>"
+    if int(group) not in allowed_groups_ids:    
+        html = "<p>ERROR: Group not available.</p>"
         return HttpResponse(html) 
     if request.method == 'POST': #if arriving here after submitting a form
         winform = WinForm(request.POST)
@@ -142,7 +142,7 @@ def compare(request, set):
             comparison.judge = request.user
             comparison.itemi = Item.objects.get(pk=request.POST.get('itemi'))
             comparison.itemj = Item.objects.get(pk=request.POST.get('itemj'))
-            comparison.set = Set.objects.get(pk=set)
+            comparison.group = Group.objects.get(pk=group)
             start = comparison.form_start_variable # still a float from form
             starttime = datetime.fromtimestamp(start) # convert back to datetime
             end = datetime.now() # use datetime instead of timezone
@@ -165,17 +165,17 @@ def compare(request, set):
                     message = "Comparison saved."
   
     #whether POST or GET, set all these variables afresh and render comparision form template        
-    compslist, itemi, itemj, j_list = item_selection(set, userid)
+    compslist, itemi, itemj, j_list = item_selection(group, userid)
     compscount = len(compslist)
-    item_count = Item.objects.filter(set=set).count()
+    item_count = Item.objects.filter(group=group).count()
     compsmax = int(item_count * (item_count - 1) * .5)
     now = datetime.now()
     starttime = now.timestamp
-    set_object = Set.objects.get(pk=set)
-    if set_object.override_end == None: # check if an comparisons limit override has been defined for the set
+    group_object = Group.objects.get(pk=group)
+    if group_object.override_end == None: # check if an comparisons limit override has been defined for the group
         compstarget = int(round((.66 * compsmax),-1))
     else:
-        compstarget = set_object.override_end
+        compstarget = group_object.override_end
     winform = WinForm()
     if len(j_list) == 0 or compscount >= compstarget:
         itemi=None
@@ -184,14 +184,14 @@ def compare(request, set):
             'itemi': itemi,
             'itemj': itemj,
             'winform': winform,
-            'set': set,
+            'group': group,
             'starttime': starttime,
             'j_list': j_list,
-            'allowed_sets_ids': allowed_sets_ids,
+            'allowed_groups_ids': allowed_groups_ids,
             'compscount': compscount,
             'compsmax': compsmax,
             'compstarget': compstarget,
-            'set_object': set_object,
+            'group_object': group_object,
             'message': message
             } 
         )

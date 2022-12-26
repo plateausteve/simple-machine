@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Item, Comparison, Set
+from .models import Item, Comparison, Group
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 
@@ -19,4 +19,4 @@ class ScriptAdmin(ImportExportModelAdmin):
 
 admin.site.register(Comparison, ComparisonAdmin)
 admin.site.register(Item, ScriptAdmin)
-admin.site.register(Set)
+admin.site.register(Group)

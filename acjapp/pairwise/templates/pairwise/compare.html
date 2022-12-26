@@ -4,18 +4,18 @@
 {% if itemj and itemi %}
     {% if user.is_authenticated %}
     <div class="container-fluid">
-        <p style="text-align: center">You are comparing items from Set {{ set_object.pk }} {{ set_object.name }}. You have completed {{ compscount }} of {{ compsmax }} possible comparisions in this set so far. About {{ compstarget }} are needed. {{ message }} Ready to compare.</p>
+        <p style="text-align: center">You are comparing items from Group {{ group_object.pk }} {{ group_object.name }}. You have completed {{ compscount }} of {{ compsmax }} possible comparisions in this group so far. About {{ compstarget }} are needed. {{ message }} Ready to compare.</p>
         <div class="row justify-content-around">
             <div class="col justify-content-start">
                 <form method="POST" style="text-align: center">
                     {% csrf_token %}
                     {{ winform }}
-                    <input type="hidden" name="set" value={{set}}>
+                    <input type="hidden" name="group" value={{group}}>
                     <input type="hidden" name="wini" value="1">
                     <input type="hidden" name="itemi" value="{{ itemi }}">
                     <input type="hidden" name="itemj" value="{{ itemj }}">
                     <input type="hidden" name="form_start_variable" value="{{ starttime }}">
-                    <input type="submit" value="Left is {{ set_object.greater_statement }}">
+                    <input type="submit" value="Left is {{ group_object.greater_statement }}">
                 </form>
                 <br>
             </div>
@@ -23,12 +23,12 @@
                 <form method="POST" style="text-align: center">
                     {% csrf_token %}
                     {{ winform }}
-                    <input type="hidden" name="set" value={{set}}>
+                    <input type="hidden" name="group" value={{group}}>
                     <input type="hidden" name="wini" value="0">
                     <input type="hidden" name="itemi" value="{{ itemi }}">
                     <input type="hidden" name="itemj" value="{{ itemj }}">
                     <input type="hidden" name="form_start_variable" value="{{ starttime }}">
-                    <input type="submit" value="Right is {{ set_object.greater_statement }}">
+                    <input type="submit" value="Right is {{ group_object.greater_statement }}">
                 </form>
                 <br>
             </div>
@@ -56,12 +56,12 @@
                 <form method="POST" style="text-align: center">
                     {% csrf_token %}
                     {{ winform }}
-                    <input type="hidden" name="set" value={{set}}>
+                    <input type="hidden" name="group" value={{group}}>
                     <input type="hidden" name="wini" value="1">
                     <input type="hidden" name="itemi" value="{{ itemi }}">
                     <input type="hidden" name="itemj" value="{{ itemj }}">
                     <input type="hidden" name="form_start_variable" value="{{ starttime }}">
-                    <input type="submit" value="Left is {{ set_object.greater_statement }}">
+                    <input type="submit" value="Left is {{ group_object.greater_statement }}">
                 </form>
                 <br>
             </div>
@@ -69,12 +69,12 @@
                 <form method="POST" style="text-align: center">
                     {% csrf_token %}
                     {{ winform }}
-                    <input type="hidden" name="set" value={{set}}>
+                    <input type="hidden" name="group" value={{group}}>
                     <input type="hidden" name="wini" value="0">
                     <input type="hidden" name="itemi" value="{{ itemi }}">
                     <input type="hidden" name="itemj" value="{{ itemj }}">
                     <input type="hidden" name="form_start_variable" value="{{ starttime }}">
-                    <input type="submit" value="Right is {{ set_object.greater_statement }}">
+                    <input type="submit" value="Right is {{ group_object.greater_statement }}">
                 </form>
                 <br>
             </div>
@@ -93,7 +93,7 @@
     </div>  
 {% else %}
     <div>
-        <p style="text-align: center">You have completed {{ compscount }} comparisions, and there are no items for you to compare in Set {{ set }}.</p>
+        <p style="text-align: center">You have completed {{ compscount }} comparisions, and there are no items for you to compare in Group {{ group }}.</p>
     </div>
 {% endif %}
 {% endblock %}
