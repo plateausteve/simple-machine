@@ -3,9 +3,6 @@
 import pandas
 from math import nan
 
-def main():
-    pass
-
 def make_groups(df):
     similar_groups = []
     ignore = []

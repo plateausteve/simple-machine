@@ -17,7 +17,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from datetime import datetime
 from django.http import HttpResponse
-from .models import Script, Comparison, Set, WinForm
+from .models import Item, Comparison, Set, WinForm
 from .utils import * 
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -50,9 +50,9 @@ def logout_view(request):
         return redirect('index.html')
 
 @login_required(login_url="login")
-def script_detail(request, pk):
-    script=get_object_or_404(Script, pk=pk)
-    return render(request, 'pairwise/script_detail.html', {'script': script})
+def item_detail(request, pk):
+    item=get_object_or_404(Item, pk=pk)
+    return render(request, 'pairwise/item_detail.html', {'item': item})
 
 @login_required(login_url="login")
 def stats(request, set):
@@ -66,31 +66,31 @@ def stats(request, set):
         judges = j
         a2 = a
         corrstats = corrstats_df.to_html()
-    computed_scripts = get_computed_scripts(set, judges)
+    computed_items = get_computed_items(set, judges)
 
     #build lists to send to Highchart charts for error bar chart -- resort for low to high scores
-    lohi_computed_scripts = sorted(computed_scripts, key = lambda x: x.probability)
-    scriptids=[]
+    lohi_computed_items = sorted(computed_items, key = lambda x: x.probability)
+    itemids=[]
     fisher=[]
     scores=[]
     scoreerrors=[]
-    for script in lohi_computed_scripts:
-        if script.ep == None:
+    for item in lohi_computed_items:
+        if item.ep == None:
             pass
         else: 
-            scriptids.append(script.idcode)
-            fisher.append(script.fisher_info)
-            scores.append(script.ep)
-            scoreerrors.append([script.lo95ci, script.hi95ci])
+            itemids.append(item.idcode)
+            fisher.append(item.fisher_info)
+            scores.append(item.ep)
+            scoreerrors.append([item.lo95ci, item.hi95ci])
 
     return render(request, 'pairwise/stats.html', {
-        'script_table': computed_scripts, 
+        'item_table': computed_items, 
         'set': set,
         'judges': judges,
         'a': a2,
         'corrstats': corrstats,
         'corr_chart_data': corr_chart_data,
-        'scriptids': scriptids,
+        'itemids': itemids,
         'fisher': fisher,
         'scores': scores,
         'scoreerrors': scoreerrors
@@ -103,11 +103,11 @@ def set_view(request, pk):
     judges.append(request.user.id)
     allowed_sets_ids = get_allowed_sets(request.user.id)
     request.session['sets'] = allowed_sets_ids
-    computed_scripts = get_computed_scripts(pk, judges)
-    computed_scripts.sort(key = lambda x: x.probability, reverse=True)
+    computed_items = get_computed_items(pk, judges)
+    computed_items.sort(key = lambda x: x.probability, reverse=True)
     return render(request, 'pairwise/set.html', {
         'pk': pk, 
-        'set_scripts': computed_scripts
+        'set_items': computed_items
         }
     )
 
@@ -140,8 +140,8 @@ def compare(request, set):
         if winform.is_valid():
             comparison = winform.save(commit=False)
             comparison.judge = request.user
-            comparison.scripti = Script.objects.get(pk=request.POST.get('scripti'))
-            comparison.scriptj = Script.objects.get(pk=request.POST.get('scriptj'))
+            comparison.itemi = Item.objects.get(pk=request.POST.get('itemi'))
+            comparison.itemj = Item.objects.get(pk=request.POST.get('itemj'))
             comparison.set = Set.objects.get(pk=set)
             start = comparison.form_start_variable # still a float from form
             starttime = datetime.fromtimestamp(start) # convert back to datetime
@@ -158,17 +158,17 @@ def compare(request, set):
                 last_comp_by_user = None #note: this may not be necessary if query automatically gives us none
                 comparison.save()
             if last_comp_by_user:
-                if (comparison.scripti == last_comp_by_user.scripti) and (comparison.scriptj == last_comp_by_user.scriptj) and (comparison.judge == last_comp_by_user.judge):        
+                if (comparison.itemi == last_comp_by_user.itemi) and (comparison.itemj == last_comp_by_user.itemj) and (comparison.judge == last_comp_by_user.judge):        
                     message = "No comparison saved."
                 else:
                     comparison.save()      
                     message = "Comparison saved."
   
     #whether POST or GET, set all these variables afresh and render comparision form template        
-    compslist, scripti, scriptj, j_list = script_selection(set, userid)
+    compslist, itemi, itemj, j_list = item_selection(set, userid)
     compscount = len(compslist)
-    script_count = Script.objects.filter(set=set).count()
-    compsmax = int(script_count * (script_count - 1) * .5)
+    item_count = Item.objects.filter(set=set).count()
+    compsmax = int(item_count * (item_count - 1) * .5)
     now = datetime.now()
     starttime = now.timestamp
     set_object = Set.objects.get(pk=set)
@@ -178,11 +178,11 @@ def compare(request, set):
         compstarget = set_object.override_end
     winform = WinForm()
     if len(j_list) == 0 or compscount >= compstarget:
-        scripti=None
-        scriptj=None
+        itemi=None
+        itemj=None
     return render(request, 'pairwise/compare.html', {
-            'scripti': scripti,
-            'scriptj': scriptj,
+            'itemi': itemi,
+            'itemj': itemj,
             'winform': winform,
             'set': set,
             'starttime': starttime,

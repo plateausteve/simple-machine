@@ -18,7 +18,7 @@
 # Aleksandra B. Slavković | Professor of Statistics
 # Department of Statistics, Penn State University, University Park, PA 16802
 
-from .models import Script, Comparison, Set
+from .models import Item, Comparison, Set
 import numpy as np
 from numpy import log, sqrt
 import random
@@ -28,7 +28,7 @@ import pandas
 import csv
 from scipy.stats import spearmanr, percentileofscore
 
-class ComputedScript:
+class ComputedItem:
     def __init__(self, id, idcode, idcode_f, comps, wins, logit, probability, stdev, fisher_info, se, ep, lo95ci, hi95ci, samep, rank, randomsorter, percentile):
             self.id = id
             self.idcode = idcode
@@ -55,56 +55,56 @@ def get_allowed_sets(userid):
         allowed_sets_ids.append(set.id)
     return allowed_sets_ids
 
-def script_selection(set, userid):
-    scriptcount = Script.objects.filter(set=set).count()
+def item_selection(set, userid):
+    itemcount = Item.objects.filter(set=set).count()
     set_object = Set.objects.get(pk=set) # sometimes we need to use object not just the string of the set ID number
     compslist = build_compslist(set, userid)
     judges = [userid] #judges must be a list, even if it only has one judge in it
-    computed_scripts_for_user_in_set = get_computed_scripts(set, judges)
-    maxcomps=(scriptcount * (scriptcount-1)/2)
-    switch=min(scriptcount + (scriptcount * (scriptcount-1)/6), maxcomps)
+    computed_items_for_user_in_set = get_computed_items(set, judges)
+    maxcomps=(itemcount * (itemcount-1)/2)
+    switch=min(itemcount + (itemcount * (itemcount-1)/6), maxcomps)
     if len(compslist) < switch: #prioritize minimum comps until comps = min of n+max/3 or max, then . . .
-        computed_scripts_for_user_in_set.sort(key = lambda x: (x.comps, x.samep, x.fisher_info, x.randomsorter))
+        computed_items_for_user_in_set.sort(key = lambda x: (x.comps, x.samep, x.fisher_info, x.randomsorter))
     else: #prioritize lowest same probability (less distinct estimate < -1, samep = -1 indicates unique estimate)
-        computed_scripts_for_user_in_set.sort(key = lambda x: (x.samep, x.comps, x.fisher_info, x.randomsorter))
-        if computed_scripts_for_user_in_set[0].samep == -1 and set_object.override_end == None:
+        computed_items_for_user_in_set.sort(key = lambda x: (x.samep, x.comps, x.fisher_info, x.randomsorter))
+        if computed_items_for_user_in_set[0].samep == -1 and set_object.override_end == None:
             return compslist, None, None, [] # everything is empty
 
-    # Go through all comparable scripts, and choose the first as scripti.
-    # Then calculate the difference in probability 'p_diff' between scripti and every other script
+    # Go through all comparable items, and choose the first as itemi.
+    # Then calculate the difference in probability 'p_diff' between itemi and every other item
     j_list = []
-    for i, script in enumerate(computed_scripts_for_user_in_set):
+    for i, item in enumerate(computed_items_for_user_in_set):
         if i == 0:
-            if script.comps == scriptcount-1:
+            if item.comps == itemcount-1:
                 return compslist, None, None, [] # everything is empty
-            scripti = Script.objects.get(pk = script.id)
-            p_i = float(script.probability)
-        elif [scripti.id, script.id] not in compslist and [script.id, scripti.id] not in compslist: # don't consider this for scriptj if it's already been compared
-            p_j = float(script.probability)
+            itemi = Item.objects.get(pk = item.id)
+            p_i = float(item.probability)
+        elif [itemi.id, item.id] not in compslist and [item.id, itemi.id] not in compslist: # don't consider this for itemj if it's already been compared
+            p_j = float(item.probability)
             p_diff = round(abs(p_i - p_j),3)
-            j_list.append([script.id, p_diff, script.comps, script.samep, script.fisher_info, script.randomsorter])
+            j_list.append([item.id, p_diff, item.comps, item.samep, item.fisher_info, item.randomsorter])
 
-    # Based on lowest probability difference, then random index, choose the most similar script to display as scriptj
+    # Based on lowest probability difference, then random index, choose the most similar item to display as itemj
     if j_list:
         j_list.sort(key=itemgetter(1,5)) # 1 is p_diff, 5 is randomsorter
-        scriptj = Script.objects.get(pk = j_list[0][0]) # the item that has the smallest log odds difference (lodiff)
-    else: # if there are no possibilities, we can't choose a scriptj at all. whatever recieves the request will have to deal with a NoneType
+        itemj = Item.objects.get(pk = j_list[0][0]) # the item that has the smallest log odds difference (lodiff)
+    else: # if there are no possibilities, we can't choose a itemj at all. whatever recieves the request will have to deal with a NoneType
         j_list = []
-        scriptj = None
-    return compslist, scripti, scriptj, j_list
+        itemj = None
+    return compslist, itemi, itemj, j_list
 
-def get_computed_scripts(set, judges):
+def get_computed_items(set, judges):
     eps_of_set = []
-    computed_scripts_for_user_in_set =[]
-    scripts = Script.objects.filter(set=set)
-    for script in scripts:
-        comps, wins = compute_comps_wins(script, judges)
+    computed_items_for_user_in_set =[]
+    items = Item.objects.filter(set=set)
+    for item in items:
+        comps, wins = compute_comps_wins(item, judges)
         logit, probability, stdev, fisher_info, se, ep, hi95ci, lo95ci, randomsorter = compute_more(comps, wins)
-        computed_scripts_for_user_in_set.append(
-            ComputedScript(
-                script.id,
-                script.idcode,
-                script.idcode_f,
+        computed_items_for_user_in_set.append(
+            ComputedItem(
+                item.id,
+                item.idcode,
+                item.idcode_f,
                 comps,
                 wins,
                 logit,
@@ -121,30 +121,30 @@ def get_computed_scripts(set, judges):
                 0, # percentile is set separately
                 )
         )
-    computed_scripts_for_user_in_set = set_ranks(computed_scripts_for_user_in_set)
-    return computed_scripts_for_user_in_set
+    computed_items_for_user_in_set = set_ranks(computed_items_for_user_in_set)
+    return computed_items_for_user_in_set
 
 def build_compslist(set, userid):
     comps = Comparison.objects.filter(set=set).filter(judge=userid)
     compslist = []
     for comp in comps:
-        i = comp.scripti.id
-        j = comp.scriptj.id
+        i = comp.itemi.id
+        j = comp.itemj.id
         compslist.append([i, j])
     return compslist
 
-def compute_comps_wins(script, judges):
+def compute_comps_wins(item, judges):
     comps = .001 # prevents divide-by-zero error in calculating probability
     wins = 0
     for judge in judges:
-        #count all the comparisons each script has been involved in for user
-        comparisons_as_i_for_judge_count = Comparison.objects.filter(scripti=script, judge__pk=judge).count()
-        comparisons_as_j_for_judge_count = Comparison.objects.filter(scriptj=script, judge__pk=judge).count()
+        #count all the comparisons each item has been involved in for user
+        comparisons_as_i_for_judge_count = Comparison.objects.filter(itemi=item, judge__pk=judge).count()
+        comparisons_as_j_for_judge_count = Comparison.objects.filter(itemj=item, judge__pk=judge).count()
         thisjudgecomps = comparisons_as_i_for_judge_count + comparisons_as_j_for_judge_count
 
-        #count all the comparisons this script has won
-        wins_as_i_for_judge_count = Comparison.objects.filter(wini=1, scripti=script, judge__pk=judge).count()
-        wins_as_j_for_judge_count = Comparison.objects.filter(wini=0, scriptj=script, judge__pk=judge).count()
+        #count all the comparisons this item has won
+        wins_as_i_for_judge_count = Comparison.objects.filter(wini=1, itemi=item, judge__pk=judge).count()
+        wins_as_j_for_judge_count = Comparison.objects.filter(wini=0, itemj=item, judge__pk=judge).count()
         thisjudgewins = wins_as_i_for_judge_count + wins_as_j_for_judge_count
 
         comps += thisjudgecomps
@@ -152,10 +152,10 @@ def compute_comps_wins(script, judges):
     return comps, wins
 
 def compute_more(comps, wins):
-    #compute probability of winning for each script based on comparisons so far
+    #compute probability of winning for each item based on comparisons so far
     probability = wins/(comps) # comps comes in with a .001 so no error dividing by 0
     # probability = (wins + .5)/(comps + 1) # see https://personal.psu.edu/abs12/stat504/Lecture/lec3_4up.pdf slide 23
-    # compute the standard deviation of sample of comparisons for this script
+    # compute the standard deviation of sample of comparisons for this item
     stdev = sqrt(((((1 - probability) ** 2) * wins) + (((0 - probability) ** 2) * (int(comps) - wins))) / (comps + .001))
     #compute other attributes only if not all wins or all losses so far
     if (round(probability, 3) == 1) or (probability <= 0):
@@ -187,25 +187,25 @@ def compute_more(comps, wins):
     return logit, probability, stdev, fisher_info, se, ep, hi95ci, lo95ci, randomsorter
     # more here: http://personal.psu.edu/abs12//stat504/online/01b_loglike/01b_loglike_print.htm
 
-def set_ranks(computed_scripts_for_user_in_set):
-    #now decrease (for sorting later) samep by one for every script including self with matching probability and set a rank value fo each
-    script_ranks = []
-    computed_scripts_for_user_in_set.sort(key = lambda x: x.probability, reverse=True)
+def set_ranks(computed_items_for_user_in_set):
+    #now decrease (for sorting later) samep by one for every item including self with matching probability and set a rank value fo each
+    item_ranks = []
+    computed_items_for_user_in_set.sort(key = lambda x: x.probability, reverse=True)
     rank = 0
-    for script in computed_scripts_for_user_in_set:
-        for match in computed_scripts_for_user_in_set:
-            if match.probability == script.probability:
+    for item in computed_items_for_user_in_set:
+        for match in computed_items_for_user_in_set:
+            if match.probability == item.probability:
                 match.samep -= 1
-        if script.samep == -1: #if there's only one at that value, then increase rank increment 1 for next
+        if item.samep == -1: #if there's only one at that value, then increase rank increment 1 for next
             rank += 1
-        script.rank = rank
-        script_ranks.append(len(computed_scripts_for_user_in_set)-rank)
+        item.rank = rank
+        item_ranks.append(len(computed_items_for_user_in_set)-rank)
     # calculate percentile in this set using the list of ranks in set
-    for script in computed_scripts_for_user_in_set:
-        r = len(script_ranks)-script.rank
-        perc = percentileofscore(script_ranks, float(r), kind='strict')
-        script.percentile = '{:.2f}'.format(perc)
-    return computed_scripts_for_user_in_set
+    for item in computed_items_for_user_in_set:
+        r = len(item_ranks)-item.rank
+        perc = percentileofscore(item_ranks, float(r), kind='strict')
+        item.percentile = '{:.2f}'.format(perc)
+    return computed_items_for_user_in_set
 
 def make_groups(setid, judgelist):
     setobject = Set.objects.get(pk=setid)
@@ -219,18 +219,18 @@ def make_groups(setid, judgelist):
         bestagreement = 0
         corrstats_df = None
         return bestgroup, bestagreement, corrstats_df
-    set_judge_script_rank = {}
+    set_judge_item_rank = {}
     for judge in judgelist:
-        computed_scripts = get_computed_scripts(setobject, [judge])
-        computed_scripts.sort(key = lambda x: x.id)
-        set_judge_script_rank[judge]=[]
-        for script in computed_scripts:
-            set_judge_script_rank[judge].append(script.rank)
+        computed_items = get_computed_items(setobject, [judge])
+        computed_items.sort(key = lambda x: x.id)
+        set_judge_item_rank[judge]=[]
+        for item in computed_items:
+            set_judge_item_rank[judge].append(item.rank)
     if len(judgelist) == 2:
-        coef, p = spearmanr(set_judge_script_rank[0],set_judge_script_rank[1])
+        coef, p = spearmanr(set_judge_item_rank[0],set_judge_item_rank[1])
         bestgroup = judgelist
         bestagreement = coef
-        corrstats_df = pandas.DataFrame(set_judge_script_rank)
+        corrstats_df = pandas.DataFrame(set_judge_item_rank)
         return bestgroup, bestagreement, corrstats_df
     else:
         judgepairs = itertools.combinations(judgelist, 2)
@@ -239,7 +239,7 @@ def make_groups(setid, judgelist):
         for judgepair in judgepairs:
             judge1 = judgepair[0]
             judge2 = judgepair[1]
-            coef, p = spearmanr(set_judge_script_rank[judge1], set_judge_script_rank[judge2])
+            coef, p = spearmanr(set_judge_item_rank[judge1], set_judge_item_rank[judge2])
             judgepaircorr[judgepair]=[coef, p]
             if coef >= .6:
                 corr_chart_data.append([str(judge1), str(judge2), round(coef,3)])
@@ -281,16 +281,16 @@ def make_groups(setid, judgelist):
     return bestgroup, bestagreement, corrstats_df, corr_chart_data
 
 # used from the django manage.py python shell
-def bulkcreatescripts(filepath, user_id, set_id):
+def bulkcreateitems(filepath, user_id, set_id):
     # in python shell define the variable as this example
-    # bulkcreatescripts("data/set4.csv",24,4)
+    # bulkcreateitems("data/set4.csv",24,4)
     file = open(filepath, "r", encoding='utf-8-sig')
     csv_reader = csv.reader(file)
     for row in csv_reader:
         id=int(row[0])
-        script = Script(set_id=set_id, idcode=id, user_id=user_id)
-        script.save()
-        print("Created script instance for for idcode ", id, "in set ", set_id, " for user ", user_id)
+        item = Item(set_id=set_id, idcode=id, user_id=user_id)
+        item.save()
+        print("Created item instance for for idcode ", id, "in set ", set_id, " for user ", user_id)
     return
 
 # used from the django manage.py python shell
@@ -300,10 +300,10 @@ def judgereport(judgeid):
     report = []
     for set in sets:
         n = Comparison.objects.filter(judge__pk = judgeid, set = set).count()
-        scriptcount = Script.objects.filter(set=set).count()
+        itemcount = Item.objects.filter(set=set).count()
         setobject = Set.objects.get(pk=set)
         if setobject.override_end == None:
-            maxcomps = int(scriptcount * (scriptcount-1) * .333)
+            maxcomps = int(itemcount * (itemcount-1) * .333)
         else:
             maxcomps = setobject.override_end
         report.append([set, n, maxcomps])
@@ -314,8 +314,8 @@ def judgereport(judgeid):
 # used from the django manage.py python shell
 # usage example: a,b,c,d,e = groupstats(4, [1,27,26],[36,35,38])
 def groupstats(set, judgelist1, judgelist2):
-    computed_scripts = get_computed_scripts(set, judgelist1)
-    rankorder1_df = pandas.DataFrame([script.__dict__ for script in computed_scripts ]) # convert list of objects into a dataframe
+    computed_items = get_computed_items(set, judgelist1)
+    rankorder1_df = pandas.DataFrame([item.__dict__ for item in computed_items ]) # convert list of objects into a dataframe
     rankorder1_df.drop(['idcode_f', 'fisher_info', 'samep', 'randomsorter', 'percentile','comps','wins','stdev','probability','se','ep','lo95ci','hi95ci'], axis = 1, inplace=True) # drop unneeded columns
     idorder1_df = rankorder1_df.sort_values("id")
     if judgelist2 == []:
@@ -323,8 +323,8 @@ def groupstats(set, judgelist1, judgelist2):
         idorder2_df = "None"
         rankcorr_df = "None"
     else:
-        computed_scripts = get_computed_scripts(set, judgelist2)
-        rankorder2_df = pandas.DataFrame([script.__dict__ for script in computed_scripts ])
+        computed_items = get_computed_items(set, judgelist2)
+        rankorder2_df = pandas.DataFrame([item.__dict__ for item in computed_items ])
         rankorder2_df.drop(['idcode_f', 'fisher_info', 'samep', 'randomsorter', 'percentile','comps','wins','stdev','probability','se','ep','lo95ci','hi95ci'], axis = 1, inplace=True) # drop unneeded columns
         idorder2_df = rankorder2_df.sort_values("id")
         rankcorr_df = idorder1_df.corrwith(idorder2_df, axis = 0, method = "spearman")

@@ -1,7 +1,7 @@
 {% extends "pairwise/base.html" %}
 
 {% block content %}
-    {% if set_scripts %}
+    {% if set_items %}
         <h4>Your Set {{ pk }} results:</h4>
         <table class="table table-striped table-hover table-bordered">
             <tr>
@@ -12,18 +12,18 @@
                 <th>Probabilty</th>
                 <th>SE</th>
             </tr>
-            {% for script in set_scripts %}
+            {% for item in set_items %}
             <tr>
-                <td><a href="{% url 'script_detail.html' pk=script.id %}">{{ script.idcode_f }}</a></td>
-                <td>{{ script.rank }}</td>
-                <td>{{ script.wins }}</td>
-                <td>{{ script.comps }}</td>
-                <td>{{ script.probability }}</td>
-                <td>{{ script.se }}</td>
+                <td><a href="{% url 'item_detail.html' pk=item.id %}">{{ item.idcode_f }}</a></td>
+                <td>{{ item.rank }}</td>
+                <td>{{ item.wins }}</td>
+                <td>{{ item.comps }}</td>
+                <td>{{ item.probability }}</td>
+                <td>{{ item.se }}</td>
             </tr>
             {% endfor %}
         </table>
     {% else %}
-        <p>There are no scripts in set {{ pk }}.</p>
+        <p>There are no items in set {{ pk }}.</p>
     {% endif %}
 {% endblock %}

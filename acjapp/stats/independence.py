@@ -9,7 +9,7 @@ top = 90
 data = pd.read_csv("datafile.csv")
 groups = [0] # trigger for all sets
 groups.extend(list(set(data["Set"]))) 
-data_col_names = ["Gender", "Race/Ethnicity", "EL"] 
+data_col_names = ["Gender", "Race_ethnicity", "EL"] 
 f = open("ind_test_results_" + str(top) + ".txt", "w")
 f.write("Fisher's exact test (2-tailed) for TOP (" + str(top) + "% +) and NOT TOP frequency for each demographic variable within each group.\nUsing scipy.stats.fisher_exact() function\n\n")
 f.close
@@ -21,11 +21,11 @@ for group in groups:
         group_data = data
 
     # for this group and with all demographic variables/columns
-    top_cdat_group = group_data.loc[data["Percentile CDAT"] >= top, :]
-    not_cdat_group = group_data.loc[data["Percentile CDAT"] < top, :]
-    top_obs_group = group_data.loc[data["Percentile Obs"] >= top, :] 
-    not_obs_group1 = group_data.loc[pd.isnull(data["Percentile Obs"]), :]
-    not_obs_group2 = group_data.loc[data["Percentile Obs"] < top, :]
+    top_cdat_group = group_data.loc[data["PercentileCDAT"] >= top, :]
+    not_cdat_group = group_data.loc[data["PercentileCDAT"] < top, :]
+    top_obs_group = group_data.loc[data["PercentileObs"] >= top, :] 
+    not_obs_group1 = group_data.loc[pd.isnull(data["PercentileObs"]), :]
+    not_obs_group2 = group_data.loc[data["PercentileObs"] < top, :]
     not_obs_group = pd.concat([not_obs_group1, not_obs_group2], axis = 0, sort = False) 
     for data_col_name in data_col_names: 
         # for each of the variables/columns in the list create new one-dimensional df with freq of subcategories as rows

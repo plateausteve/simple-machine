@@ -100,7 +100,7 @@ WSGI_APPLICATION = 'acjapp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pairwise',
+        'NAME': 'simple',
         'USER': 'root',
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': 'localhost',
