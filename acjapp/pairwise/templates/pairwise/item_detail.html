@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="container-fluid">   
-        <p>Group: {{ item.group }}; person ID Code: {{ item.idcode_f }}; uploaded by user {{ item.user.id }} </p>
+        <p>Group: {{ item.group }}; student: {{ item.student.id }}; uploaded by user {{ item.user.id }} </p>
         <div class="ratio" style="--bs-aspect-ratio: 150%;">
             {% if item.pdf.url %}
                 <embed src="{{ item.pdf.url }}" type="application/pdf" scrollbar="1" view="fit" width="100%" height="100%" >

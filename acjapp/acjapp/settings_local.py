@@ -100,7 +100,7 @@ WSGI_APPLICATION = 'acjapp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'simple',
+        'NAME': 'simplemachine',
         'USER': 'root',
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': 'localhost',
@@ -155,3 +155,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD='django.db.models.AutoField'
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+#RandomIDModel package generates a random primary key for new instances of a model / ID in database
+ID_DIGITS_LENGTH = 7

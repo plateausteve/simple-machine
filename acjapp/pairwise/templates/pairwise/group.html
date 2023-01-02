@@ -5,7 +5,7 @@
         <h4>Your Group {{ pk }} results:</h4>
         <table class="table table-striped table-hover table-bordered">
             <tr>
-                <th>Person ID Code</th>
+                <th>Student ID Code</th>
                 <th>Rank</th>
                 <th>Wins</th>
                 <th>Comparisons</th>
@@ -14,7 +14,7 @@
             </tr>
             {% for item in group_items %}
             <tr>
-                <td><a href="{% url 'item_detail.html' pk=item.id %}">{{ item.idcode_f }}</a></td>
+                <td><a href="{% url 'item_detail.html' pk=item.id %}">{{ item.id }}</a></td>
                 <td>{{ item.rank }}</td>
                 <td>{{ item.wins }}</td>
                 <td>{{ item.comps }}</td>

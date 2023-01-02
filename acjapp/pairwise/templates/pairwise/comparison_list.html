@@ -16,13 +16,13 @@
                 <td>{{ comparison.pk }}</td>
                 <td><a href="{% url 'item_detail.html' pk=comparison.itemi.pk %}">
                     {% if comparison.wini == 1 %}<b>{% endif %}
-                        {{ comparison.itemi.idcode_f }}
+                        {{ comparison.itemi.id }}
                     {% if comparison.wini == 1 %}</b>{% endif %}
                     </a>
                 </td>
                 <td><a href="{% url 'item_detail.html' pk=comparison.itemj.pk %}">
                     {% if comparison.wini == 0 %}<b>{% endif %}
-                        {{ comparison.itemj.idcode_f }}
+                        {{ comparison.itemj.id }}
                     {% if comparison.wini == 0 %}</b>{% endif %}
                     </a>
                 </td>

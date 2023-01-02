@@ -83,8 +83,8 @@
     <div>
     {%if user.is_superuser %}
         <p>Debug information:</p>
-        <p>Item i ID: {{ itemi.id }}; PERSON ID: {{ itemi.idcode }}</p>
-        <p>Item j ID: {{ itemj.id }}; PERSON ID: {{ itemj.idcode }}</p>
+        <p>Item i ID: {{ itemi.id }}; STUDENT ID: {{ itemi.student.id }}</p>
+        <p>Item j ID: {{ itemj.id }}; STUDENT ID: {{ itemj.student.id }}</p>
         <p>List of Js: {{ j_list }}</p>
     {% endif %}
     {% else %}

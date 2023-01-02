@@ -56,7 +56,7 @@ def item_detail(request, pk):
 
 @login_required(login_url="login")
 def stats(request, group):
-    judgelist = [] # the make_groups function can also take preselected judges when needed -- right now command line only
+    judgelist = [] # the make_groups function can also take preselected judges when needed -- so far command line only
     j, a, corrstats_df, corr_chart_data = make_groups(group, judgelist)
     if len(j) < 2:
         judges = [request.user.id]
